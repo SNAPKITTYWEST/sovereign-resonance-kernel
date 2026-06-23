@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtual Spaces Governance Kernel — Ω</title>
+<script src="https://cdn.jsdelivr.net/npm/tau-prolog/modules/core.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#040408;--bg2:#07070f;--bg3:#0b0b18;--bd:#15152a;
+  --G:#00ff88;--P:#a855f7;--B:#3b82f6;--O:#f97316;--Y:#fbbf24;--R:#ef4444;--C:#22d3ee;
+  --tx:#dde6f0;--mu:#4b5563;
+}
+body{background:var(--bg);color:var(--tx);font-family:'Space Mono',monospace;min-height:100vh;overflow-x:hidden}
+
+/* ── NAV ─────────────────────────────────────────────────── */
+nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;height:52px;background:rgba(4,4,8,.97);border-bottom:1px solid var(--bd);backdrop-filter:blur(8px)}
+.nav-l{display:flex;align-items:center;gap:14px}
+.omega{font-size:22px;color:var(--P);animation:glow-p 2s ease-in-out infinite}
+@keyframes glow-p{0%,100%{text-shadow:0 0 6px var(--P)}50%{text-shadow:0 0 22px var(--P),0 0 44px var(--P)}}
+.nav-title{font-size:10px;font-weight:700;letter-spacing:.25em;color:var(--tx)}
+.nav-sub{font-size:8px;color:var(--mu);letter-spacing:.12em;margin-top:2px}
+.nav-r{display:flex;gap:20px;font-size:8px;letter-spacing:.12em;color:var(--mu)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--G);display:inline-block;margin-right:4px;animation:blink 1.4s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.stat-g{color:var(--G)} .stat-p{color:var(--P)} .stat-y{color:var(--Y)}
+
+/* ── GOVERNANCE CHAIN ────────────────────────────────────── */
+.chain-bar{padding:16px 20px;border-bottom:1px solid var(--bd);overflow-x:auto}
+.chain-label{font-size:7px;letter-spacing:.25em;color:var(--mu);margin-bottom:12px}
+.chain{display:flex;align-items:center;gap:0;min-width:760px}
+.chain-block{flex:1;display:flex;flex-direction:column;align-items:center}
+.chain-box{width:120px;padding:10px 8px;border:1px solid;border-radius:2px;text-align:center;transition:all .25s}
+.chain-box .c-main{font-size:9px;font-weight:700;letter-spacing:.08em;margin-bottom:3px}
+.chain-box .c-sub{font-size:7px;color:var(--mu)}
+.c-omega  {border-color:var(--P);color:var(--P);background:rgba(168,85,247,.07)}
+.c-prolog {border-color:var(--G);color:var(--G);background:rgba(0,255,136,.07)}
+.c-inter  {border-color:var(--B);color:var(--B);background:rgba(59,130,246,.07)}
+.c-ada    {border-color:var(--O);color:var(--O);background:rgba(249,115,22,.07)}
+.c-grandor{border-color:var(--Y);color:var(--Y);background:rgba(251,191,36,.07)}
+.chain-box.lit-omega  {box-shadow:0 0 18px rgba(168,85,247,.5);border-color:var(--P)}
+.chain-box.lit-prolog {box-shadow:0 0 18px rgba(0,255,136,.5);border-color:var(--G)}
+.chain-box.lit-inter  {box-shadow:0 0 18px rgba(59,130,246,.5);border-color:var(--B)}
+.chain-box.lit-ada    {box-shadow:0 0 18px rgba(249,115,22,.5);border-color:var(--O)}
+.chain-box.lit-grandor{box-shadow:0 0 18px rgba(251,191,36,.5);border-color:var(--Y)}
+.chain-arr{flex-shrink:0;padding:0 6px;display:flex;flex-direction:column;align-items:center}
+.arr-lbl{font-size:7px;color:var(--mu);margin-bottom:4px;letter-spacing:.07em}
+.arr-line{width:36px;height:1px;background:var(--bd);position:relative}
+.arr-line::after{content:'›';position:absolute;right:-7px;top:-7px;font-size:12px;color:var(--mu)}
+.chain-back{font-size:7px;color:var(--mu);letter-spacing:.1em;margin-top:6px;padding-top:4px;
+  border-top:1px dashed var(--bd);width:100%;text-align:center}
+
+/* ── WORLD + ACTIVITY ────────────────────────────────────── */
+.world-row{display:grid;grid-template-columns:1fr 320px;border-bottom:1px solid var(--bd)}
+.world-panel{padding:16px 20px}
+.section-title{font-size:8px;letter-spacing:.2em;color:var(--mu);margin-bottom:12px}
+.station{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.room{border:1px solid var(--bd);padding:10px 12px;background:var(--bg2);transition:background .3s}
+.room.active-room{background:var(--bg3);border-color:#222240}
+.room-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.room-name{font-size:8px;font-weight:700;letter-spacing:.15em}
+.room-code{font-size:7px;color:var(--mu)}
+.room-agents{display:flex;gap:4px;flex-wrap:wrap;min-height:20px}
+.room-full{grid-column:1/-1}
+.agent-pip{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:7px;font-weight:700;border:1px solid;transition:all .3s;cursor:default}
+.pip-arch  {background:rgba(168,85,247,.15);border-color:var(--P);color:var(--P)}
+.pip-aud   {background:rgba(251,191,36,.15);border-color:var(--Y);color:var(--Y)}
+.pip-eng   {background:rgba(59,130,246,.15);border-color:var(--B);color:var(--B)}
+.pip-dip   {background:rgba(34,211,238,.15);border-color:var(--C);color:var(--C)}
+.pip-cust  {background:rgba(249,115,22,.15);border-color:var(--O);color:var(--O)}
+.pip-sent  {background:rgba(239,68,68,.15);border-color:var(--R);color:var(--R)}
+
+/* ── ACTIVITY FEED ───────────────────────────────────────── */
+.activity-panel{border-left:1px solid var(--bd);padding:16px}
+.feed{max-height:300px;overflow-y:auto}
+.feed-entry{font-size:8px;line-height:1.9;padding:4px 0;border-bottom:1px solid #0a0a14}
+.feed-entry:last-child{border-bottom:none}
+.fe-time{color:var(--mu)}
+.fe-agent{font-weight:700}
+.fe-step{color:var(--B)}
+.fe-ok{color:var(--G)}
+.fe-fail{color:var(--R)}
+.fe-vote{color:var(--Y)}
+.fe-seal{color:var(--P)}
+
+/* ── GOVERNANCE EVAL PANEL ──────────────────────────────── */
+.eval-row{display:grid;grid-template-columns:1fr 340px;border-bottom:1px solid var(--bd)}
+.eval-panel{padding:16px 20px;border-right:1px solid var(--bd)}
+.trace-box{background:#02020a;border:1px solid var(--bd);padding:10px;max-height:220px;
+  overflow-y:auto;font-size:8px;line-height:2;margin-top:10px}
+.t-step{color:var(--B)} .t-ok{color:var(--G)} .t-fail{color:var(--R)}
+.t-result{font-size:9px;font-weight:700} .t-muted{color:var(--mu)}
+
+/* ── COUNCIL VOTE ─────────────────────────────────────────── */
+.council-panel{padding:16px}
+.vote-hidden{display:none}
+.vote-active{display:block}
+.vote-title{font-size:8px;letter-spacing:.2em;color:var(--Y);margin-bottom:8px;font-weight:700}
+.vote-action{font-size:9px;color:var(--tx);margin-bottom:12px;padding:8px;border:1px solid var(--bd);background:var(--bg2)}
+.votes-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:12px}
+.vote-row{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;
+  border:1px solid var(--bd);font-size:8px}
+.vote-row .v-name{color:var(--tx)}
+.vote-row .v-yes{color:var(--G);font-weight:700}
+.vote-row .v-no{color:var(--R);font-weight:700}
+.vote-row .v-pending{color:var(--mu)}
+.vote-tally{font-size:10px;font-weight:700;text-align:center;padding:10px;border:1px solid var(--bd);background:var(--bg2)}
+.tally-pass{color:var(--G)} .tally-fail{color:var(--R)} .tally-pending{color:var(--mu)}
+
+/* ── WORM CHAIN ──────────────────────────────────────────── */
+.worm-section{padding:16px 20px;border-bottom:1px solid var(--bd)}
+.worm-header{display:grid;grid-template-columns:36px 80px 130px 60px 80px 90px 48px;
+  gap:8px;font-size:7px;letter-spacing:.1em;color:var(--mu);padding-bottom:6px;border-bottom:1px solid var(--bd)}
+.worm-list{max-height:180px;overflow-y:auto}
+.worm-entry{display:grid;grid-template-columns:36px 80px 130px 60px 80px 90px 48px;
+  gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #080810;font-size:8px}
+.w-num{color:var(--mu)} .w-agent{font-weight:700} .w-action{color:var(--B)}
+.w-pass{color:var(--G);font-weight:700} .w-fail{color:var(--R);font-weight:700}
+.w-hash{color:var(--mu);font-family:monospace;font-size:7px}
+.w-seal{font-size:11px} .w-step{color:var(--mu);font-size:7px}
+
+/* ── BOTTOM STATS ────────────────────────────────────────── */
+.bottom{display:grid;grid-template-columns:1fr 1fr 1fr 1fr}
+.b-block{padding:14px 18px;border-right:1px solid var(--bd)}
+.b-block:last-child{border-right:none}
+.b-title{font-size:7px;letter-spacing:.2em;color:var(--mu);margin-bottom:8px}
+.b-row{display:flex;justify-content:space-between;font-size:8px;padding:3px 0;color:var(--mu)}
+.b-row span{color:var(--tx)}
+
+canvas#osc{width:100%;height:64px;display:block;border:1px solid var(--bd);margin-top:8px}
+
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-l">
+    <span class="omega">Ω</span>
+    <div>
+      <div class="nav-title">VIRTUAL SPACES GOVERNANCE KERNEL</div>
+      <div class="nav-sub">PROLOG CONSTRAINTS · ADA CONTRACTS · GRANDOR TRUST · WORM PROOFS</div>
+    </div>
+  </div>
+  <div class="nav-r">
+    <span><span class="live-dot"></span><span class="stat-g">KERNEL LIVE</span></span>
+    <span class="stat-p" id="n-harm">Ω 0.847</span>
+    <span class="stat-g" id="n-pass">PASS 0/0</span>
+    <span class="stat-y" id="n-worm">WORM 0</span>
+  </div>
+</nav>
+
+<!-- GOVERNANCE CHAIN -->
+<div class="chain-bar">
+  <div class="chain-label">META RESONANCE GOVERNANCE CHAIN — RECURSIVE FEEDBACK LOOP</div>
+  <div class="chain">
+    <div class="chain-block">
+      <div class="chain-box c-omega" id="cb-omega">
+        <div class="c-main">META RESONANCE Ω</div>
+        <div class="c-sub">Harmonic Feedback</div>
+        <div class="c-sub" style="margin-top:4px">Block Origin</div>
+      </div>
+      <div class="chain-back">← RECURSIVE SYNC</div>
+    </div>
+    <div class="chain-arr"><div class="arr-lbl">HARMONIC</div><div class="arr-line"></div></div>
+    <div class="chain-block">
+      <div class="chain-box c-prolog" id="cb-prolog">
+        <div class="c-main">PROLOG ENGINE</div>
+        <div class="c-sub">can_execute/2</div>
+        <div class="c-sub" style="margin-top:4px">Constraint Check</div>
+      </div>
+    </div>
+    <div class="chain-arr"><div class="arr-lbl">VALIDATE</div><div class="arr-line"></div></div>
+    <div class="chain-block">
+      <div class="chain-box c-inter" id="cb-inter">
+        <div class="c-main">INTERCOL STRUCT</div>
+        <div class="c-sub">structurally_valid/2</div>
+        <div class="c-sub" style="margin-top:4px">Struct Engine</div>
+      </div>
+    </div>
+    <div class="chain-arr"><div class="arr-lbl">ENFORCE</div><div class="arr-line"></div></div>
+    <div class="chain-block">
+      <div class="chain-box c-ada" id="cb-ada">
+        <div class="c-main">ADA CONTRACT</div>
+        <div class="c-sub">ada_precondition/2</div>
+        <div class="c-sub" style="margin-top:4px">Pre / Post</div>
+      </div>
+    </div>
+    <div class="chain-arr"><div class="arr-lbl">VERIFY</div><div class="arr-line"></div></div>
+    <div class="chain-block">
+      <div class="chain-box c-grandor" id="cb-grandor">
+        <div class="c-main">GRANDOR TRUST</div>
+        <div class="c-sub">GT Model v3</div>
+        <div class="c-sub" style="margin-top:4px">Recursive Sync</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WORLD MAP + ACTIVITY -->
+<div class="world-row">
+  <div class="world-panel">
+    <div class="section-title">VIRTUAL SPACE STATION — AGENT WORLD</div>
+    <div class="station">
+      <div class="room" id="room-db">
+        <div class="room-header">
+          <span class="room-name" style="color:var(--O)">DOCKING BAY</span>
+          <span class="room-code">DB</span>
+        </div>
+        <div class="room-agents" id="ragents-db"></div>
+      </div>
+      <div class="room" id="room-cc">
+        <div class="room-header">
+          <span class="room-name" style="color:var(--P)">COUNCIL CHAMBER</span>
+          <span class="room-code">CC</span>
+        </div>
+        <div class="room-agents" id="ragents-cc"></div>
+      </div>
+      <div class="room" id="room-ed">
+        <div class="room-header">
+          <span class="room-name" style="color:var(--B)">ENGINEERING DECK</span>
+          <span class="room-code">ED</span>
+        </div>
+        <div class="room-agents" id="ragents-ed"></div>
+      </div>
+      <div class="room" id="room-av">
+        <div class="room-header">
+          <span class="room-name" style="color:var(--Y)">ARCHIVE VAULT</span>
+          <span class="room-code">AV</span>
+        </div>
+        <div class="room-agents" id="ragents-av"></div>
+      </div>
+      <div class="room room-full" id="room-sh">
+        <div class="room-header">
+          <span class="room-name" style="color:var(--C)">SOCIAL HUB</span>
+          <span class="room-code">SH</span>
+        </div>
+        <div class="room-agents" id="ragents-sh"></div>
+      </div>
+    </div>
+
+    <!-- Resonance oscillator -->
+    <div style="margin-top:12px">
+      <div class="section-title">RESONANCE OSCILLATOR</div>
+      <canvas id="osc" width="460" height="64"></canvas>
+    </div>
+  </div>
+
+  <!-- ACTIVITY FEED -->
+  <div class="activity-panel">
+    <div class="section-title">AGENT LOOP ACTIVITY</div>
+    <div class="feed" id="feed"></div>
+  </div>
+</div>
+
+<!-- GOVERNANCE EVAL + COUNCIL VOTE -->
+<div class="eval-row">
+  <div class="eval-panel">
+    <div class="section-title">PROLOG CONSTRAINT TRACE</div>
+    <div id="current-query" style="font-size:9px;color:var(--mu);margin-bottom:6px">
+      Waiting for agent action proposal…
+    </div>
+    <div class="trace-box" id="trace"></div>
+  </div>
+
+  <div class="council-panel">
+    <div class="section-title">COUNCIL CHAMBER — VOTE</div>
+    <div id="vote-idle" style="font-size:9px;color:var(--mu);padding:12px;border:1px solid var(--bd);background:var(--bg2)">
+      Council vote triggered only for risky actions:<br>
+      governance_vote · raise_alert
+    </div>
+    <div id="vote-active" class="vote-hidden">
+      <div class="vote-title">⬡ COUNCIL VOTE IN SESSION</div>
+      <div class="vote-action" id="vote-action-label"></div>
+      <div class="votes-grid" id="votes-grid"></div>
+      <div class="vote-tally tally-pending" id="vote-tally">COUNTING…</div>
+    </div>
+  </div>
+</div>
+
+<!-- WORM CHAIN -->
+<div class="worm-section">
+  <div class="section-title">WORM AUDIT CHAIN — IMMUTABLE PROOF LEDGER</div>
+  <div class="worm-header">
+    <span>#</span><span>AGENT</span><span>ACTION</span><span>RESULT</span>
+    <span>LOOP STEP</span><span>HASH</span><span>SEAL</span>
+  </div>
+  <div class="worm-list" id="worm-list">
+    <div style="font-size:8px;color:var(--mu);padding:10px 0">
+      Audit chain empty — agents will seal receipts here as they execute.
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM STATS -->
+<div class="bottom">
+  <div class="b-block">
+    <div class="b-title">DIGITAL TWIN MEMORY</div>
+    <div class="b-row">Knowledge Nodes <span id="kg-n">247</span></div>
+    <div class="b-row">Relationships <span id="kg-r">1,832</span></div>
+    <div class="b-row">Mission Events <span id="kg-e">0</span></div>
+    <div class="b-row">Last Sync <span id="kg-s">—</span></div>
+  </div>
+  <div class="b-block">
+    <div class="b-title">ADA CONTRACT ENGINE</div>
+    <div class="b-row">Precondition <span id="ada-pre" style="color:var(--G)">HOLD</span></div>
+    <div class="b-row">Postcondition <span id="ada-post" style="color:var(--G)">HOLD</span></div>
+    <div class="b-row">Invariant <span id="ada-inv" style="color:var(--G)">STABLE</span></div>
+    <div class="b-row">Violations <span id="ada-v">0</span></div>
+  </div>
+  <div class="b-block">
+    <div class="b-title">INTERCOL STRUCT ENGINE</div>
+    <div class="b-row">Structural State <span id="ic-s" style="color:var(--G)">VALID</span></div>
+    <div class="b-row">Active Predicates <span id="ic-p">12</span></div>
+    <div class="b-row">Checks Run <span id="ic-c">0</span></div>
+    <div class="b-row">Violations <span id="ic-v">0</span></div>
+  </div>
+  <div class="b-block">
+    <div class="b-title">META RESONANCE STATE</div>
+    <div class="b-row">Harmonic Ω <span id="mr-h" style="color:var(--P)">0.847</span></div>
+    <div class="b-row">Trust Score <span id="mr-t" style="color:var(--G)">94%</span></div>
+    <div class="b-row">Stability <span id="mr-s" style="color:var(--G)">STABLE</span></div>
+    <div class="b-row">Pass Rate <span id="mr-p">—</span></div>
+  </div>
+</div>
+
+<script>
+// ─── KNOWLEDGE BASE ──────────────────────────────────────────────────────────
+const KB = `
+agent(architect, high, governance).
+agent(auditor, high, compliance).
+agent(engineer, medium, execution).
+agent(diplomat, medium, negotiation).
+agent(custodian, low, maintenance).
+agent(sentinel, high, security).
+
+action(governance_vote, high, governance, 93).
+action(audit_seal, high, compliance, 87).
+action(deploy_contract, medium, execution, 75).
+action(negotiate_treaty, medium, negotiation, 72).
+action(archive_record, low, maintenance, 65).
+action(raise_alert, high, security, 91).
+action(read_archive, low, any, 60).
+action(submit_proposal, medium, any, 70).
+
+trust_gte(high, high).
+trust_gte(high, medium).
+trust_gte(high, low).
+trust_gte(medium, medium).
+trust_gte(medium, low).
+trust_gte(low, low).
+
+domain_ok(_, any).
+domain_ok(D, D).
+
+resonance_ok(H) :- H >= 60.
+
+structurally_valid(A, X) :- agent(A, _, _), action(X, _, _, _).
+ada_precondition(A, X)   :- can_execute(A, X).
+ada_postcondition(X, produces_seal) :- action(X, _, _, H), resonance_ok(H).
+
+can_execute(A, X) :-
+  agent(A, T, D),
+  action(X, RT, RD, H),
+  trust_gte(T, RT),
+  domain_ok(D, RD),
+  resonance_ok(H).
+`;
+
+// ─── STATIC DATA ─────────────────────────────────────────────────────────────
+const AGENTS_DATA = {
+  architect: { trust:'high',   domain:'governance',   room:'cc',  pip:'pip-arch',  label:'AR', color:'var(--P)' },
+  auditor:   { trust:'high',   domain:'compliance',   room:'av',  pip:'pip-aud',   label:'AU', color:'var(--Y)' },
+  engineer:  { trust:'medium', domain:'execution',    room:'ed',  pip:'pip-eng',   label:'EN', color:'var(--B)' },
+  diplomat:  { trust:'medium', domain:'negotiation',  room:'sh',  pip:'pip-dip',   label:'DI', color:'var(--C)' },
+  custodian: { trust:'low',    domain:'maintenance',  room:'db',  pip:'pip-cust',  label:'CU', color:'var(--O)' },
+  sentinel:  { trust:'high',   domain:'security',     room:'sh',  pip:'pip-sent',  label:'SE', color:'var(--R)' },
+};
+
+const ACTIONS_DATA = {
+  governance_vote:  { trustReq:'high',   domainReq:'governance',  harmonic:0.93, risky:true  },
+  audit_seal:       { trustReq:'high',   domainReq:'compliance',  harmonic:0.87, risky:false },
+  deploy_contract:  { trustReq:'medium', domainReq:'execution',   harmonic:0.75, risky:false },
+  negotiate_treaty: { trustReq:'medium', domainReq:'negotiation', harmonic:0.72, risky:false },
+  archive_record:   { trustReq:'low',    domainReq:'maintenance', harmonic:0.65, risky:false },
+  raise_alert:      { trustReq:'high',   domainReq:'security',    harmonic:0.91, risky:true  },
+  read_archive:     { trustReq:'low',    domainReq:'any',         harmonic:0.60, risky:false },
+  submit_proposal:  { trustReq:'medium', domainReq:'any',         harmonic:0.70, risky:false },
+};
+
+// Actions each agent can propose (domain-appropriate)
+const AGENT_ACTIONS = {
+  architect: ['governance_vote', 'submit_proposal', 'read_archive'],
+  auditor:   ['audit_seal', 'read_archive', 'raise_alert'],
+  engineer:  ['deploy_contract', 'read_archive', 'submit_proposal'],
+  diplomat:  ['negotiate_treaty', 'submit_proposal', 'read_archive'],
+  custodian: ['archive_record', 'read_archive'],
+  sentinel:  ['raise_alert', 'audit_seal', 'read_archive'],
+};
+
+// Room actions available per location
+const ROOM_ACTIONS = {
+  db: ['archive_record', 'read_archive'],
+  cc: ['governance_vote', 'submit_proposal'],
+  ed: ['deploy_contract', 'archive_record'],
+  av: ['audit_seal', 'read_archive'],
+  sh: ['negotiate_treaty', 'submit_proposal', 'read_archive'],
+};
+
+const TRUST_RANK = { high:3, medium:2, low:1 };
+
+// Agent loop steps
+const LOOP_STEPS = ['OBSERVE','READ_MEMORY','PROPOSE','VALIDATE','VOTE','EXECUTE','SEAL','UPDATE_TWIN'];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let agentRooms = {};
+let agentSteps = {};
+let agentProposal = {};
+let passCount = 0, failCount = 0, totalCount = 0;
+let wormCount = 0;
+let harmonic = 0.847;
+let adaViolations = 0, icViolations = 0, icChecks = 0;
+let kgNodes = 247, kgRels = 1832, kgEvents = 0;
+let oscPhase = 0;
+let busy = false; // prevent concurrent evaluations
+
+// ─── PROLOG ───────────────────────────────────────────────────────────────────
+let plSession = null;
+function initProlog() {
+  if (typeof pl === 'undefined') return;
+  plSession = pl.create(16384);
+  plSession.consult(KB, {
+    success: () => feedLog('t-ok', '✓ tau-Prolog session loaded — KB: 6 agents, 8 actions, 4 rules'),
+    error:   (e) => feedLog('t-muted', '⚠ Prolog fallback active: ' + e),
+  });
+}
+
+// ─── WORLD MAP ───────────────────────────────────────────────────────────────
+function initRooms() {
+  Object.keys(AGENTS_DATA).forEach(a => {
+    agentRooms[a] = AGENTS_DATA[a].room;
+    agentSteps[a] = 0;
+  });
+  renderRooms();
+}
+
+function renderRooms() {
+  ['db','cc','ed','av','sh'].forEach(rid => {
+    const el = document.getElementById('ragents-' + rid);
+    if (!el) return;
+    el.innerHTML = '';
+    Object.keys(agentRooms).forEach(a => {
+      if (agentRooms[a] === rid) {
+        const pip = document.createElement('div');
+        pip.className = 'agent-pip ' + AGENTS_DATA[a].pip;
+        pip.title = a.toUpperCase();
+        pip.textContent = AGENTS_DATA[a].label;
+        el.appendChild(pip);
+      }
+    });
+  });
+}
+
+function moveAgent(agent, toRoom) {
+  agentRooms[agent] = toRoom;
+  renderRooms();
+}
+
+// ─── FEED LOG ─────────────────────────────────────────────────────────────────
+function feedLog(cls, msg) {
+  const feed = document.getElementById('feed');
+  if (!feed) return;
+  const el = document.createElement('div');
+  el.className = 'feed-entry';
+  const ts = new Date().toLocaleTimeString('en-US', {hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  el.innerHTML = `<span class="fe-time">${ts}</span> <span class="${cls}">${msg}</span>`;
+  feed.insertBefore(el, feed.firstChild);
+  if (feed.children.length > 80) feed.removeChild(feed.lastChild);
+}
+
+// ─── TRACE ───────────────────────────────────────────────────────────────────
+function clearTrace() { document.getElementById('trace').innerHTML = ''; }
+function traceLog(cls, msg) {
+  const box = document.getElementById('trace');
+  const line = document.createElement('div');
+  line.className = cls;
+  line.style.cssText = 'font-size:8px;line-height:1.9;';
+  line.textContent = msg;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ─── JS CONSTRAINT EVALUATOR ─────────────────────────────────────────────────
+function jsEval(agentName, actionName) {
+  const ag = AGENTS_DATA[agentName];
+  const ac = ACTIONS_DATA[actionName];
+  if (!ag || !ac) return { pass:false, trustOk:false, domainOk:false, resonOk:false };
+  const trustOk  = TRUST_RANK[ag.trust] >= TRUST_RANK[ac.trustReq];
+  const domainOk = ac.domainReq === 'any' || ag.domain === ac.domainReq;
+  const resonOk  = ac.harmonic >= 0.60;
+  return { pass: trustOk && domainOk && resonOk, trustOk, domainOk, resonOk };
+}
+
+// ─── COUNCIL VOTE ─────────────────────────────────────────────────────────────
+function councilVote(voter, actionName) {
+  const v = AGENTS_DATA[voter];
+  const ac = ACTIONS_DATA[actionName];
+  const domainOk = ac.domainReq === 'any' || v.domain === ac.domainReq;
+  const trustOk  = TRUST_RANK[v.trust] >= TRUST_RANK[ac.trustReq];
+  return domainOk || trustOk;
+}
+
+async function runCouncilVote(proposer, actionName) {
+  document.getElementById('vote-idle').style.display = 'none';
+  document.getElementById('vote-active').style.display = 'block';
+  document.getElementById('vote-action-label').textContent =
+    `Proposed by ${proposer.toUpperCase()}: ${actionName.replace(/_/g,' ')}`;
+
+  const grid = document.getElementById('votes-grid');
+  grid.innerHTML = '';
+  const agents = Object.keys(AGENTS_DATA);
+  const rows = {};
+
+  agents.forEach(a => {
+    const row = document.createElement('div');
+    row.className = 'vote-row';
+    row.innerHTML = `<span class="v-name">${a}</span><span class="v-pending" id="vr-${a}">…</span>`;
+    grid.appendChild(row);
+    rows[a] = row;
+  });
+
+  document.getElementById('vote-tally').className = 'vote-tally tally-pending';
+  document.getElementById('vote-tally').textContent = 'COUNTING…';
+
+  let yesCount = 0;
+  for (let i = 0; i < agents.length; i++) {
+    await delay(300);
+    const a = agents[i];
+    const vote = councilVote(a, actionName);
+    if (vote) yesCount++;
+    const vEl = document.getElementById('vr-' + a);
+    if (vEl) {
+      vEl.className = vote ? 'v-yes' : 'v-no';
+      vEl.textContent = vote ? 'YEA ✓' : 'NAY ✗';
+    }
+  }
+
+  await delay(400);
+  const passed = yesCount >= 3;
+  const tally = document.getElementById('vote-tally');
+  tally.className = 'vote-tally ' + (passed ? 'tally-pass' : 'tally-fail');
+  tally.textContent = `${yesCount}/6 YEA — ${passed ? 'COUNCIL PASSES' : 'COUNCIL BLOCKS'}`;
+
+  feedLog('fe-vote', `⬡ COUNCIL: ${yesCount}/6 yea — ${actionName.replace(/_/g,' ')} ${passed ? 'PASSED' : 'BLOCKED'}`);
+
+  await delay(2000);
+  document.getElementById('vote-idle').style.display = 'block';
+  document.getElementById('vote-active').style.display = 'none';
+
+  return passed;
+}
+
+// ─── WORM SEAL ───────────────────────────────────────────────────────────────
+function sealWORM(agentName, actionName, pass, step) {
+  wormCount++;
+  const ts = Date.now();
+  const hashInput = agentName + actionName + ts + wormCount;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < hashInput.length; i++) {
+    h ^= hashInput.charCodeAt(i);
+    h = (h * 0x01000193) >>> 0;
+  }
+  const hash = h.toString(16).padStart(8,'0');
+
+  const list = document.getElementById('worm-list');
+  if (list.querySelector('div[style]')) list.innerHTML = '';
+
+  const entry = document.createElement('div');
+  entry.className = 'worm-entry';
+  entry.innerHTML = `
+    <span class="w-num">#${String(wormCount).padStart(3,'0')}</span>
+    <span class="w-agent" style="color:${AGENTS_DATA[agentName].color}">${agentName}</span>
+    <span class="w-action">${actionName.replace(/_/g,' ')}</span>
+    <span class="${pass ? 'w-pass' : 'w-fail'}">${pass ? '✓ PASS' : '✗ FAIL'}</span>
+    <span class="w-step">${step}</span>
+    <span class="w-hash">${hash}…</span>
+    <span class="w-seal">${pass ? '🔒' : '⚠️'}</span>
+  `;
+  list.insertBefore(entry, list.firstChild);
+
+  document.getElementById('n-worm').textContent = 'WORM ' + wormCount;
+}
+
+// ─── UPDATE STATS ─────────────────────────────────────────────────────────────
+function updateStats(pass, actionName) {
+  totalCount++;
+  if (pass) passCount++; else { failCount++; adaViolations++; icViolations++; }
+  icChecks++;
+
+  const actionData = ACTIONS_DATA[actionName];
+  if (pass) harmonic = Math.min(0.995, harmonic * 0.96 + actionData.harmonic * 0.04);
+  else       harmonic = Math.max(0.42, harmonic * 0.98);
+
+  const rate = totalCount ? Math.round(passCount / totalCount * 100) : 0;
+  const trust = Math.round(50 + rate * 0.48);
+  kgNodes += 2; kgRels += 5; kgEvents++;
+
+  document.getElementById('n-harm').textContent   = 'Ω ' + harmonic.toFixed(3);
+  document.getElementById('n-pass').textContent   = `PASS ${passCount}/${totalCount}`;
+  document.getElementById('mr-h').textContent     = harmonic.toFixed(3);
+  document.getElementById('mr-t').textContent     = trust + '%';
+  document.getElementById('mr-p').textContent     = rate + '%';
+  const stabEl = document.getElementById('mr-s');
+  stabEl.textContent = harmonic > 0.72 ? 'STABLE' : harmonic > 0.55 ? 'DEGRADED' : 'CRITICAL';
+  stabEl.style.color = harmonic > 0.72 ? 'var(--G)' : harmonic > 0.55 ? 'var(--Y)' : 'var(--R)';
+
+  document.getElementById('ada-v').textContent  = adaViolations;
+  document.getElementById('ic-c').textContent   = icChecks;
+  document.getElementById('ic-v').textContent   = icViolations;
+  document.getElementById('kg-n').textContent   = kgNodes;
+  document.getElementById('kg-r').textContent   = kgRels.toLocaleString();
+  document.getElementById('kg-e').textContent   = kgEvents;
+  document.getElementById('kg-s').textContent   = new Date().toLocaleTimeString('en-US',{hour12:false});
+
+  if (!pass) {
+    const el = document.getElementById('ada-pre');
+    el.textContent = 'VIOLATED'; el.style.color = 'var(--R)';
+    setTimeout(() => { el.textContent = 'HOLD'; el.style.color = 'var(--G)'; }, 2500);
+  }
+}
+
+// ─── CHAIN ANIMATION ─────────────────────────────────────────────────────────
+const CHAIN_IDS  = ['cb-omega','cb-prolog','cb-inter','cb-ada','cb-grandor'];
+const CHAIN_LITS = ['lit-omega','lit-prolog','lit-inter','lit-ada','lit-grandor'];
+
+async function animateChain(pass) {
+  for (let i = 0; i < CHAIN_IDS.length; i++) {
+    if (i > 0) document.getElementById(CHAIN_IDS[i-1]).classList.remove(CHAIN_LITS[i-1]);
+    document.getElementById(CHAIN_IDS[i]).classList.add(CHAIN_LITS[i]);
+    await delay(260);
+  }
+  await delay(300);
+  document.getElementById(CHAIN_IDS[4]).classList.remove(CHAIN_LITS[4]);
+  if (pass) {
+    document.getElementById(CHAIN_IDS[0]).classList.add(CHAIN_LITS[0]);
+    await delay(500);
+    document.getElementById(CHAIN_IDS[0]).classList.remove(CHAIN_LITS[0]);
+  }
+}
+
+// ─── AGENT SIMULATION LOOP ───────────────────────────────────────────────────
+async function agentTick(agentName) {
+  const agData = AGENTS_DATA[agentName];
+  const step   = agentSteps[agentName];
+
+  switch (step) {
+    case 0: { // OBSERVE
+      feedLog('fe-step', `[${agData.label}] STEP 1 OBSERVE — scanning world in ${agentRooms[agentName].toUpperCase()}`);
+      break;
+    }
+    case 1: { // READ_MEMORY
+      feedLog('fe-step', `[${agData.label}] STEP 2 READ MEMORY — loading twin state (${kgNodes} nodes)`);
+      break;
+    }
+    case 2: { // PROPOSE
+      // Pick an action based on location + domain
+      const roomActions = ROOM_ACTIONS[agentRooms[agentName]] || [];
+      const agentActions = AGENT_ACTIONS[agentName] || [];
+      const candidates = agentActions.filter(a => roomActions.includes(a));
+      const pool = candidates.length ? candidates : agentActions;
+      const action = pool[Math.floor(Math.random() * pool.length)];
+      agentProposal[agentName] = action;
+      feedLog('fe-step', `[${agData.label}] STEP 3 PROPOSE — ${action.replace(/_/g,' ')}`);
+      document.getElementById('current-query').textContent =
+        `? can_execute(${agentName}, ${action})`;
+      break;
+    }
+    case 3: { // VALIDATE — Prolog constraint check
+      if (!busy) {
+        busy = true;
+        const action = agentProposal[agentName];
+        if (!action) { agentSteps[agentName] = 0; busy = false; break; }
+
+        feedLog('fe-step', `[${agData.label}] STEP 4 VALIDATE — Prolog constraint check`);
+        clearTrace();
+        traceLog('t-step', `QUERY: can_execute(${agentName}, ${action})`);
+
+        await delay(80);
+        const r = jsEval(agentName, action);
+        const ac = ACTIONS_DATA[action];
+
+        traceLog('t-step',  `STEP 1 — agent(${agentName}, ${agData.trust}, ${agData.domain})`);
+        await delay(90);
+        traceLog(r.trustOk ? 't-ok' : 't-fail',
+          `STEP 2 — trust_gte(${agData.trust}, ${ac.trustReq}) ${r.trustOk ? '✓' : '✗'}`);
+        await delay(90);
+        traceLog(r.domainOk ? 't-ok' : 't-fail',
+          `STEP 3 — domain_ok(${agData.domain}, ${ac.domainReq}) ${r.domainOk ? '✓' : '✗'}`);
+        await delay(90);
+        traceLog('t-ok', `STEP 4 — resonance_ok(${ac.harmonic}) ✓`);
+        await delay(90);
+        traceLog('t-ok', `STEP 5 — structurally_valid(${agentName}, ${action}) ✓`);
+        await delay(90);
+
+        if (r.pass) {
+          traceLog('t-ok', `STEP 6 — ada_precondition: HOLDS ✓`);
+          traceLog('t-result t-ok', `\n✓ CONSTRAINT SATISFIED — authorized`);
+        } else {
+          const why = [];
+          if (!r.trustOk)  why.push(`trust ${agData.trust} < ${ac.trustReq}`);
+          if (!r.domainOk) why.push(`domain ${agData.domain} ≠ ${ac.domainReq}`);
+          traceLog('t-fail', `STEP 6 — ada_precondition: VIOLATED ✗`);
+          traceLog('t-result t-fail', `\n✗ BLOCKED — ${why.join(' · ')}`);
+        }
+
+        agentProposal[agentName] = { action, pass: r.pass };
+        animateChain(r.pass);
+        busy = false;
+      }
+      break;
+    }
+    case 4: { // VOTE (only for risky actions that passed)
+      const proposal = agentProposal[agentName];
+      if (!proposal || typeof proposal !== 'object') break;
+      const { action, pass } = proposal;
+      const actionData = ACTIONS_DATA[action];
+
+      if (pass && actionData && actionData.risky) {
+        feedLog('fe-vote', `[${agData.label}] STEP 5 VOTE — ${action.replace(/_/g,' ')} is risky, triggering council`);
+        const councilPass = await runCouncilVote(agentName, action);
+        agentProposal[agentName] = { action, pass: councilPass };
+      } else {
+        feedLog('fe-step', `[${agData.label}] STEP 5 VOTE — not required (not risky or already blocked)`);
+      }
+      break;
+    }
+    case 5: { // EXECUTE
+      const proposal = agentProposal[agentName];
+      if (!proposal || typeof proposal !== 'object') break;
+      const { action, pass } = proposal;
+      if (pass) {
+        feedLog('fe-ok', `[${agData.label}] STEP 6 EXECUTE ✓ — ${action.replace(/_/g,' ')}`);
+        // Move agent to appropriate room for action
+        const roomMap = {
+          governance_vote: 'cc', audit_seal: 'av', deploy_contract: 'ed',
+          negotiate_treaty: 'sh', archive_record: 'av', raise_alert: 'cc',
+          read_archive: 'av', submit_proposal: 'cc',
+        };
+        if (roomMap[action]) moveAgent(agentName, roomMap[action]);
+      } else {
+        feedLog('fe-fail', `[${agData.label}] STEP 6 EXECUTE ✗ — blocked, returning to idle`);
+      }
+      updateStats(!!pass, action);
+      break;
+    }
+    case 6: { // SEAL
+      const proposal = agentProposal[agentName];
+      if (!proposal || typeof proposal !== 'object') break;
+      const { action, pass } = proposal;
+      feedLog('fe-seal', `[${agData.label}] STEP 7 SEAL — WORM receipt #${wormCount+1}`);
+      sealWORM(agentName, action, !!pass, pass ? 'EXECUTE' : 'BLOCK');
+      break;
+    }
+    case 7: { // UPDATE_TWIN
+      feedLog('fe-step', `[${agData.label}] STEP 8 UPDATE TWIN — syncing memory (${kgNodes} nodes)`);
+      agentProposal[agentName] = null;
+      // Drift to a new room
+      const rooms = ['db','cc','ed','av','sh'];
+      const preferred = agData.room;
+      const r = Math.random();
+      moveAgent(agentName, r < 0.6 ? preferred : rooms[Math.floor(Math.random() * rooms.length)]);
+      break;
+    }
+  }
+
+  agentSteps[agentName] = (step + 1) % 8;
+}
+
+// ─── OSCILLATOR CANVAS ───────────────────────────────────────────────────────
+function drawOsc() {
+  const c = document.getElementById('osc');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#02020a'; ctx.fillRect(0, 0, W, H);
+
+  // grid
+  ctx.strokeStyle = '#0b0b18'; ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 16) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  const amp  = (harmonic - 0.35) / 0.65 * (H * 0.38);
+  const freq = 1.8 + harmonic * 3.2;
+
+  // secondary wave
+  ctx.beginPath(); ctx.strokeStyle = 'rgba(168,85,247,.18)'; ctx.lineWidth = 1;
+  for (let x = 0; x <= W; x++) {
+    const y = H/2 - Math.sin((x/W)*Math.PI*(freq+1.3) + oscPhase*1.2) * amp * 0.6;
+    x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  } ctx.stroke();
+
+  // main wave
+  ctx.beginPath(); ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2;
+  for (let x = 0; x <= W; x++) {
+    const y = H/2 - Math.sin((x/W)*Math.PI*freq + oscPhase) * amp;
+    x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  } ctx.stroke();
+
+  // fill
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0,'rgba(168,85,247,.07)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.moveTo(0,H/2);
+  for (let x = 0; x <= W; x++) {
+    const y = H/2 - Math.sin((x/W)*Math.PI*freq + oscPhase) * amp;
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(W,H/2); ctx.closePath(); ctx.fillStyle = g; ctx.fill();
+
+  // label
+  ctx.fillStyle = 'rgba(168,85,247,.75)'; ctx.font = '8px Space Mono,monospace';
+  ctx.fillText('Ω ' + harmonic.toFixed(3), 6, 12);
+
+  oscPhase += 0.035;
+  requestAnimationFrame(drawOsc);
+}
+
+// ─── UTILITY ──────────────────────────────────────────────────────────────────
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── AGENT SCHEDULER ─────────────────────────────────────────────────────────
+const AGENT_NAMES = Object.keys(AGENTS_DATA);
+
+async function scheduleAgent(agentName, offset) {
+  await delay(offset);
+  while (true) {
+    await agentTick(agentName);
+    await delay(1600 + Math.random() * 800);
+  }
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  initProlog();
+  initRooms();
+  drawOsc();
+
+  feedLog('t-muted', '── Virtual Space Station online ──');
+  feedLog('t-muted', '── Governance Kernel Ω initialized ──');
+  feedLog('t-ok',    '── 6 agents entering simulation loop ──');
+
+  // Stagger agent starts by 2.5s each
+  AGENT_NAMES.forEach((name, i) => scheduleAgent(name, i * 2500));
+});
+</script>
+</body>
+</html>
