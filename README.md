@@ -210,3 +210,5 @@ A governed multi-agent system where:
 ⬡  collectivekitty.com · github.com/SNAPKITTYWEST
 ⬡  CC0 — no rights reserved — copy freely
 ```
+
+![](https://sovereign-analytics.snapkittywest.workers.dev/canary/sovereign-resonance-kernel)
